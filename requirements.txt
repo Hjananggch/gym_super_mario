@@ -1,3 +1,4 @@
 gym==0.21.0
-gym-super-mario-bros ==7.4.0
+gym-super-mario-bros==7.4.0
+numpy>=1.23
 torch

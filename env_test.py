@@ -1,20 +1,41 @@
-import gym_super_mario_bros
-from nes_py.wrappers import JoypadSpace
-from gym_super_mario_bros.actions import COMPLEX_MOVEMENT
+import argparse
+
+from mario_rl.config import EnvConfig
+from mario_rl.env import build_env
+from mario_rl.utils import reset_env, step_env
 
 
-# Create and wrap the environment
-env = gym_super_mario_bros.make('SuperMarioBros-v0')
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Smoke test for the wrapped Super Mario environment.")
+    parser.add_argument("--steps", type=int, default=200, help="Number of random steps to execute.")
+    parser.add_argument(
+        "--action-set",
+        default="complex",
+        choices=["right_only", "simple", "complex"],
+        help="Discrete Mario action set.",
+    )
+    parser.add_argument("--render", action="store_true", help="Render the environment.")
+    return parser.parse_args()
 
-# Apply an action space wrapper to the environment
-env = JoypadSpace(env, COMPLEX_MOVEMENT)
 
-# Reset the environment
-env.reset()
-# Take a step in the environmentd
-for step in range(1000):
-    env.render()
-    state,reward,done,info = env.step(env.action_space.sample())
-    if done:
-        env.reset()
-env.close()
+def main() -> None:
+    args = parse_args()
+    env = build_env(EnvConfig(action_set=args.action_set, render=args.render))
+    state = reset_env(env)
+    print(f"Initial observation shape: {state.shape}")
+
+    for step in range(1, args.steps + 1):
+        if args.render:
+            env.render()
+        action = env.action_space.sample()
+        state, reward, done, info = step_env(env, action)
+        if done:
+            state = reset_env(env)
+        if step % 50 == 0:
+            print(f"Step {step}: reward={reward:.2f}, x_pos={info.get('x_pos')}")
+
+    env.close()
+
+
+if __name__ == "__main__":
+    main()
